@@ -1,3 +1,5 @@
+# JS Waz Here!
+
 from stockfish import Stockfish
 import time
 import random
