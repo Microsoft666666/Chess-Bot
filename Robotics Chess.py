@@ -1,6 +1,5 @@
-# JS Waz Here!
-
 from stockfish import Stockfish
+import chess
 import time
 import random
 DEBUG = True
@@ -12,17 +11,18 @@ FEN = '1r2kb1r/pppqp1pp/2np1p1n/1P3P1P/6b1/8/P1PPPKP1/RNBQ1BNR w k - 3 8'
 ## set up for castle
 FEN = 'rnbqkbnr/ppppppp1/7p/1B6/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
 
+FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
 
-# stockfish = Stockfish(path="stockfish/stockfish-macos-x86-64")
-# board = stockfish.get_board_visual()
-# print(board)
+cpu_sleep_time = 0.001
+
 
 class ChessGame:
 
   # This is the constuctor 
   def __init__(self, stockfish_path = 'stockfish/stockfish-macos-x86-64'):
     self.stockfish = Stockfish(path=stockfish_path)
+    self.chess_board = chess.Board()
     self.is_white_turn = True
     self.is_checkmate = False
     self.is_check = False
@@ -51,12 +51,28 @@ class ChessGame:
     return moves[nth_move - 1]['Move']
 
 
+  def checkStatus(self):
+    print('is_stalemate', self.chess_board.is_stalemate())
+    print('is_insufficient_material', self.chess_board.is_insufficient_material())
+    print('can_claim_threefold_repetition', self.chess_board.can_claim_threefold_repetition())
+    print('halfmove_clock', self.chess_board.halfmove_clock)
+    print('can_claim_fifty_moves', self.chess_board.can_claim_fifty_moves())
+    print('can_claim_draw', self.chess_board.can_claim_draw())
+
+    print('is_fivefold_repetition', self.chess_board.is_fivefold_repetition())
+    print('is_seventyfive_moves', self.chess_board.is_seventyfive_moves())
+
+
+    print('outcome', self.chess_board.outcome())
+
+
 
   def isMoveLegal(self, move):
     return self.stockfish.is_move_correct(move)
   
 
   def makeMove(self, move):
+    self.chess_board.push_san(move)
     return self.stockfish.make_moves_from_current_position([move])
 
 
@@ -93,34 +109,67 @@ def getUserInput(chessgame):
     userInput = input('Enter your move:')
   return userInput
 
+def isGame(chessgame):
+  outcome = game.chess_board.outcome()
+
+  if outcome:
+    print(outcome)
+    winner = 'draw'
+    if outcome.winner:
+      winner = 'white'
+    elif outcome.winner == False:
+      winner = 'black'
+
+    if winner == 'draw':
+      print('The game is a draw by', outcome.termination)
+    else:
+      print('Checkmate.', winner, 'is the winner')
+
+    return True
+  return False
+
 def engineSelfPlay(game, delayTime = 0.1):
   while(True):
-    # if(DEBUG):
-    #   print(game.stockfish.get_fen_position())
-    botsmove = game.getRandomMove()
+    if(DEBUG):
+      print('sFish:', game.stockfish.get_fen_position())
+      # print('Chess:', game.chess_board.fen())
+      # game.checkStatus()
+      # input('')
+
+    botsmove = game.getRandomMove(2)
     game.makeMove(botsmove)
 
     print('\nWhite\'s Move:', botsmove)
     print(game.getBoard())
-    if game.isMate():
-      print('White wins')
+
+    if isGame(game):
       break
-    if game.isMate():
-      print('Black wins')
-      break
+
+
+    # if game.isMate():
+    #   print('White wins')
+    #   break
+
 
     time.sleep(delayTime)
+    if(DEBUG):
+      print('sFish:', game.stockfish.get_fen_position())
+      # print('Chess:', game.chess_board.fen())
+      # game.checkStatus()
+      # input('')
 
-    botsmove = game.getRandomMove()
+
+    botsmove = game.getRandomMove(10)
     game.makeMove(botsmove)
     print("\nBlack's Move:", botsmove)
     print(game.getBoard())
-    if game.isMate():
-      print('Black wins')
+
+
+    if isGame(game):
       break
-    if game.isMate():
-      print('White wins')
-      break
+    # if game.isMate():
+    #   print('White wins')
+    #   break
 
     time.sleep(delayTime)
 
@@ -177,7 +226,10 @@ def playerWhiteGame(game):
 
 if __name__ == "__main__":
   game = ChessGame()
-  ##game.stockfish.set_fen_position(FEN)
+
+  if(DEBUG):
+    game.stockfish.set_fen_position(FEN)
+    game.chess_board = chess.Board(FEN)
 
   print('Welcome AI Chess Bot')
 
@@ -208,7 +260,7 @@ if __name__ == "__main__":
   print(game.getBoard(isPlayerWhite))
 
   if isCPUvsCPU:
-    engineSelfPlay(game)
+    engineSelfPlay(game, cpu_sleep_time)
   elif isPlayerWhite:
     playerWhiteGame(game)
   else:
