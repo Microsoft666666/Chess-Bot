@@ -5,19 +5,21 @@ import random
 DEBUG = True
 
 ## Right before a check after a promotion
-FEN = 'r1q1kbQ1/p1ppp2p/bpn5/5p2/8/8/PPPPPPP1/RNBQKBNR w KQq - 1 7'
+#FEN = 'r1q1kbQ1/p1ppp2p/bpn5/5p2/8/8/PPPPPPP1/RNBQKBNR w KQq - 1 7'
 ## set up for en passant
-FEN = '1r2kb1r/pppqp1pp/2np1p1n/1P3P1P/6b1/8/P1PPPKP1/RNBQ1BNR w k - 3 8'
+#FEN = '1r2kb1r/pppqp1pp/2np1p1n/1P3P1P/6b1/8/P1PPPKP1/RNBQ1BNR w k - 3 8'
 ## set up for castle
-FEN = 'rnbqkbnr/ppppppp1/7p/1B6/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
-
+#FEN = 'rnbqkbnr/ppppppp1/7p/1B6/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4'
+## Starting
 FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
 
 
 cpu_sleep_time = 0.001
 
 
 class ChessGame:
+  WHITE_OPENINGS = ['f2f4', 'e2e3', 'e2e4', 'd2d3', 'd2d4', 'c2c3', 'c2c4', 'b2b3', 'b2b4', 'g1f3', 'b1c3']
 
   # This is the constuctor 
   def __init__(self, stockfish_path = 'stockfish/stockfish-macos-x86-64'):
@@ -27,6 +29,7 @@ class ChessGame:
     self.is_checkmate = False
     self.is_check = False
     self.turn = 0
+    self.is_opening_move = True
 
     self.stockfish.set_elo_rating(250)
 
@@ -45,6 +48,10 @@ class ChessGame:
 
 
   def getRandomMove(self, nth_move = 1):
+    if(self.is_opening_move):
+      index = random.randint(0, len(ChessGame.WHITE_OPENINGS) - 1)
+      return ChessGame.WHITE_OPENINGS[index]
+
     moves = self.stockfish.get_top_moves(nth_move)
     nth_move = min(nth_move, len(moves))
     nth_move = random.randint(0, nth_move)
@@ -66,12 +73,12 @@ class ChessGame:
     print('outcome', self.chess_board.outcome())
 
 
-
   def isMoveLegal(self, move):
     return self.stockfish.is_move_correct(move)
   
 
   def makeMove(self, move):
+    self.is_opening_move = False
     self.chess_board.push_san(move)
     return self.stockfish.make_moves_from_current_position([move])
 
@@ -137,7 +144,9 @@ def engineSelfPlay(game, delayTime = 0.1):
       # input('')
 
     botsmove = game.getRandomMove(2)
+    print(botsmove)
     game.makeMove(botsmove)
+    # input('Enter to conutue: ')
 
     print('\nWhite\'s Move:', botsmove)
     print(game.getBoard())
